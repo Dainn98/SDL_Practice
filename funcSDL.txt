@@ -1,0 +1,6 @@
+texture.setPosition(int x , int y) => set texture in (x,y)
+.setKeyColor => set alpha max => 
+LTexture => close => texture.free();
+            render =>texture.render(int width,int height);
+SDL_Texture => close => SDLDestroyTexture(texture)
+                render => SDLRenderCopy()..
