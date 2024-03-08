@@ -19,3 +19,7 @@ SDL2_ttf
   <!-- Change the `github-readme-stats.anuraghazra1.vercel.app` to `github-readme-stats.vercel.app`  -->
   <img align="center" src="https://github-readme-stats.anuraghazra1.vercel.app/api/pin/?username=dainn98&repo=FloppyBird_BTL&theme=radical" />
 </a>  
+<a href="https://github.com/Dainn98/HangMan">
+  <!-- Change the `github-readme-stats.anuraghazra1.vercel.app` to `github-readme-stats.vercel.app`  -->
+  <img align="center" src="https://github-readme-stats.anuraghazra1.vercel.app/api/pin/?username=dainn98&repo=HangMan&theme=radical" />
+</a> 
