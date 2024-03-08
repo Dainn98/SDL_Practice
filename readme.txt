@@ -15,3 +15,7 @@ SDL2_ttf
 SDL2
 SDL2_image
 SDL2_ttf
+<a href="https://github.com/Dainn98/FloppyBird_BTL">
+  <!-- Change the `github-readme-stats.anuraghazra1.vercel.app` to `github-readme-stats.vercel.app`  -->
+  <img align="center" src="https://github-readme-stats.anuraghazra1.vercel.app/api/pin/?username=dainn98&repo=FloppyBird_BTL&theme=radical" />
+</a>  
