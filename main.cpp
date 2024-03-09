@@ -215,8 +215,10 @@ void close(){
 	gRenderer = NULL;
 	//Quit SDL subsystems
 	IMG_Quit();
+
 	SDL_Quit();
-}
+}sdad
+
 
 int main( int argc, char* args[] )
 {

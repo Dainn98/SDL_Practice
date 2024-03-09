@@ -72,7 +72,7 @@ void close();
 // SDL_Window* gWindow = NULL;
 
 // //The window renderer
-// SDL_Renderer* gRenderer = NULL;
+// SDL_Renderer* gRenderer = NULL;4
 
 //Scene texture
 LTexture gPromptTexture;
