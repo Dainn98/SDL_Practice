@@ -23,3 +23,13 @@ SDL2_ttf
   <!-- Change the `github-readme-stats.anuraghazra1.vercel.app` to `github-readme-stats.vercel.app`  -->
   <img align="center" src="https://github-readme-stats.anuraghazra1.vercel.app/api/pin/?username=dainn98&repo=HangMan&theme=radical" />
 </a> 
+<a href="https://github.com/Dainn98/AdvProg_AY2324">
+  <!-- Change the `github-readme-stats.anuraghazra1.vercel.app` to `github-readme-stats.vercel.app`  -->
+  <img align="center" src="https://github-readme-stats.anuraghazra1.vercel.app/api/pin/?username=dainn98&repo=AdvProg_AY2324&theme=radical" />
+</a>  
+<a href="https://github.com/Dainn98/Dainn98">
+  <!-- Change the `github-readme-stats.anuraghazra1.vercel.app` to `github-readme-stats.vercel.app`  -->
+  <img align="center" src="https://github-readme-stats.anuraghazra1.vercel.app/api/pin/?username=dainn98&repo=Dainn98&theme=radical" />
+</a>  
+
+
