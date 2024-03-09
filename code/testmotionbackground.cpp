@@ -87,7 +87,7 @@ bool init(){
 }
 bool loadMedia(){
 	bool success = true;
-	gSpriteSheetTexture.loadFromFile( "Sprites/backgroundForFlappyBird.png" ) ;
+	gSpriteSheetTexture.loadFromFile( "Sprites/picture/background.png" ) ;
 		gSpriteClips[ 0 ].x =   0;
 		gSpriteClips[ 0 ].y =   0;
 		gSpriteClips[ 0 ].w =  900;

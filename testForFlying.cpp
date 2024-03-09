@@ -9,7 +9,8 @@ bool loadMedia();
 //Frees media and shuts down SDL
 void close();
 // const int FLYING_ANIMATION_FRAMES_OF_BIRD = 3;
-LTexture gTextures[FLYING_ANIMATION_FRAMES_OF_BIRD];
+LTexture gTextures[FLYING_ANIMATION_FRAMES_OF_BIRD],
+		gBackground;
 bool init()
 {
 	bool success = true;
@@ -66,16 +67,24 @@ bool loadMedia()
 	//Loading success flag
 	bool success = true;
 	//Load sprite sheet texture
-	gTextures[0].loadFromFile("image/bluebird-downflap.png");
-    gTextures[1].loadFromFile("image/bluebird-midflap.png");
-    gTextures[2].loadFromFile("image/bluebird-upflap.png");
+	// gTextures[0].loadFromFile("Sprites/bluebird2.png");
+    // gTextures[1].loadFromFile("Sprites/bluebird1.png");
+    // gTextures[2].loadFromFile("Sprites/bluebird3.png");
+	gBackground.loadFromFile("Sprites/background.jpg");
+	gTextures[0].loadFromFile("Sprites/piranha1.png");
+    gTextures[1].loadFromFile("Sprites/piranha2.png");
+    gTextures[2].loadFromFile("Sprites/piranha3.png");
+	gTextures[3].loadFromFile("Sprites/piranha4.png");
+	gTextures[4].loadFromFile("Sprites/piranha5.png");
     // for(int i = 0; i < FLYING_ANIMATION_FRAMES_OF_BIRD; i++) if( gTextures[i] == NULL) success = false;
+	
+	
 	return success;
 }
 
 void close()
 {
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 5; ++i) {
         gTextures[i].free();
     }
 
@@ -133,11 +142,15 @@ int main( int argc, char* args[] )
 				SDL_RenderClear( gRenderer );
 
 				//Render current frame
-				gTextures[currentTexture].render(SCREEN_WIDTH/2, SCREEN_HEIGHT/3);
+				gBackground.render(0,0);
+				gTextures[currentTexture].render(SCREEN_WIDTH/2  , SCREEN_HEIGHT/3);
+				
 
 				//Update screen
 				SDL_RenderPresent( gRenderer );
-                currentTexture = (currentTexture + 1) % 3;
+                if(currentTexture != 5){
+					currentTexture = (currentTexture + 1) % 5;
+				}
                 SDL_Delay(100);
 				//Go to next frame
 				// ++frame;

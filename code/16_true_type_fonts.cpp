@@ -29,7 +29,6 @@ class LTexture
 		void render( int x, int y, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE );
 		int getWidth();
 		int getHeight();
-
 	private:
 		SDL_Texture* mTexture;
 		int mWidth;
@@ -39,7 +38,6 @@ bool init();
 bool loadMedia();
 void close();
 SDL_Window* gWindow = NULL;
-
 SDL_Renderer* gRenderer = NULL;
 TTF_Font* gFont = NULL; 	//New
 LTexture gTextTexture;
@@ -233,7 +231,7 @@ bool loadMedia()
 	bool success = true;
 
 	//Open the font
-	gFont = TTF_OpenFont( "16_true_type_fonts/lazy.ttf", 28 );
+	gFont = TTF_OpenFont( "Sprites/lazy.ttf", 28 );
 	if( gFont == NULL )
 	{
 		printf( "Failed to load lazy font! SDL_ttf Error: %s\n", TTF_GetError() );
@@ -243,7 +241,7 @@ bool loadMedia()
 	{
 		//Render text
 		SDL_Color textColor = { 0, 0, 0 };
-		if( !gTextTexture.loadFromRenderedText( "The quick brown fox jumps over the lazy dog", textColor ) )
+		if( !gTextTexture.loadFromRenderedText( "Game Over", textColor ) )
 		{
 			printf( "Failed to render text texture!\n" );
 			success = false;

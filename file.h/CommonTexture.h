@@ -1,3 +1,5 @@
+#ifndef COMMON_TEXTURE_H_
+#define COMMON_TEXTURE_H_
 #include "CommonFunc.h"
 //https://lazyfoo.net/tutorials/SDL/index.php
 bool init();
@@ -116,3 +118,4 @@ int LTexture::getHeight()
 {
 	return mHeight;
 }
+#endif

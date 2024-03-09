@@ -1,22 +1,20 @@
-#ifndef COMMON_FUNCTION_H_
-#define COMMON_FUNCTION_H_
+#ifndef COMMON_FUNC_H_
+#define COMMON_FUNC_H_
 #include <windows.h>
 #include <SDL2/SDL.h>
-#include <stdio.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 #include <bits/stdc++.h>
-#include <cstdlib>
-#include <ctime>
-
 // #include "CommonTexture.h"
 using namespace std;
 
 static SDL_Event* g_event;
 SDL_Window* gWindow = NULL;
 SDL_Renderer* gRenderer = NULL;
-SDL_Texture* birdTexture = nullptr;
-SDL_Texture* pipeTexture = nullptr;
+SDL_Texture* birdTexture = NULL;
+SDL_Texture* pipeTexture = NULL;
+TTF_Font* gFont = NULL; 	//New
+// LTexture gTextTexture;
 //SCREEN
 const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 800;
@@ -37,7 +35,7 @@ const int BIRD_HEIGHT = 50;
 //Pipe
 const int PIPE_WIDTH = 100;
 const int PIPE_HEIGHT = 300;
-const int FLYING_ANIMATION_FRAMES_OF_BIRD = 3; 
+const int FLYING_ANIMATION_FRAMES_OF_BIRD = 5; 
 //Feature 
 const int DELAY = 20;
 const int GRAVITY = 1;
@@ -57,4 +55,7 @@ const int COLOR_KEY_B = 180;
 // #include <SDL_mixer.h>
 // #include <string>
 // #include <iostream>
+// #include <cstdlib>
+// #include <ctime>
+// #include <stdio.h>
 #endif
