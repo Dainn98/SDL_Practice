@@ -1,5 +1,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_mixer.h>
+#include <SDL2/SDL_ttf.h>
 #include <stdio.h>
 #include <string>
 #include <bits/stdc++.h>
@@ -27,11 +29,121 @@ class LTexture{
 		int mWidth;
 		int mHeight;
 };
+class LTimer
+{
+    public:
+        LTimer();
+        void start();
+        void stop();
+        void pause();
+        void unpause();
+        Uint32 getTicks();
+        bool isStarted();
+        bool isPaused();
+    private:
+        Uint32 mStartTicks;
+        Uint32 mPausedTicks;
+        bool mPaused;
+        bool mStarted;
+};
 
+LTimer::LTimer()
+{
+    //Initialize the variables
+    mStartTicks = 0;
+    mPausedTicks = 0;
+
+    mPaused = false;
+    mStarted = false;
+}
+void LTimer::start()
+{
+    //Start the timer
+    mStarted = true;
+
+    //Unpause the timer
+    mPaused = false;
+
+    //Get the current clock time
+    mStartTicks = SDL_GetTicks();
+    mPausedTicks = 0;
+}
+void LTimer::stop()
+{
+    //Stop the timer
+    mStarted = false;
+
+    //Unpause the timer
+    mPaused = false;
+
+    //Clear tick variables
+    mStartTicks = 0;
+    mPausedTicks = 0;
+}
+void LTimer::pause()
+{
+    //If the timer is running and isn't already paused
+    if( mStarted && !mPaused )
+    {
+        //Pause the timer
+        mPaused = true;
+
+        //Calculate the paused ticks
+        mPausedTicks = SDL_GetTicks() - mStartTicks;
+        mStartTicks = 0;
+    }
+}
+void LTimer::unpause()
+{
+    //If the timer is running and paused
+    if( mStarted && mPaused )
+    {
+        //Unpause the timer
+        mPaused = false;
+
+        //Reset the starting ticks
+        mStartTicks = SDL_GetTicks() - mPausedTicks;
+
+        //Reset the paused ticks
+        mPausedTicks = 0;
+    }
+}
+Uint32 LTimer::getTicks()
+{
+    //The actual timer time
+    Uint32 time = 0;
+
+    //If the timer is running
+    if( mStarted )
+    {
+        //If the timer is paused
+        if( mPaused )
+        {
+            //Return the number of ticks when the timer was paused
+            time = mPausedTicks;
+        }
+        else
+        {
+            //Return the current time minus the start time
+            time = SDL_GetTicks() - mStartTicks;
+        }
+    }
+
+    return time;
+}
+bool LTimer::isStarted()
+{
+    //Timer is running and paused or unpaused
+    return mStarted;
+}
+bool LTimer::isPaused()
+{
+    //Timer is running and paused
+    return mPaused && mStarted;
+}
 bool init();
 bool loadMedia();
 void close();
-
 SDL_Window* gWindow = NULL;
 SDL_Renderer* gRenderer = NULL;
 //Scene textures
@@ -43,8 +155,21 @@ LTexture gPressTexture,
 LTexture gPiranha1,
 		gPiranha2,
 		gPiranha3;
+LTexture gPausePromptTexture,
+gTimeTextTexture,
+gStartPromptTexture;
+TTF_Font* gFont = NULL;
 SDL_Joystick* gGameController = NULL;
-LTexture gArrowTexture;
+LTexture gArrowTexture,
+        gTimeTextTure,
+        gPromptTextTexture;
+LTexture gPromptTexture; //screen texture
+Mix_Music *gMusic = NULL; //loadMUV
+Mix_Chunk *gScratch = NULL; //LoadWAV
+Mix_Chunk *gHigh = NULL;
+Mix_Chunk *gMedium = NULL;
+Mix_Chunk *gLow = NULL;
+
 LTexture::LTexture()
 {
 	//Initialize
@@ -52,9 +177,7 @@ LTexture::LTexture()
 	mWidth = 0;
 	mHeight = 0;
 }
-
 LTexture::~LTexture()	{	free();	}
-
 bool LTexture::loadFromFile( std::string path ){
 	free();
 	SDL_Texture* newTexture = NULL;
@@ -73,7 +196,6 @@ bool LTexture::loadFromFile( std::string path ){
 	mTexture = newTexture;
 	return mTexture != NULL;
 }
-
 #if defined(SDL_TTF_MAJOR_VERSION)
 bool LTexture::loadFromRenderedText( std::string textureText, SDL_Color textColor )
 {
@@ -121,15 +243,12 @@ void LTexture::free(){
 void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue ){
 	SDL_SetTextureColorMod( mTexture, red, green, blue );
 }
-
 void LTexture::setBlendMode( SDL_BlendMode blending ){
 	SDL_SetTextureBlendMode( mTexture, blending );
 }
-		
 void LTexture::setAlpha( Uint8 alpha ){
 	SDL_SetTextureAlphaMod( mTexture, alpha );
 }
-
 void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip )
 {
 	SDL_Rect renderQuad = { x, y, mWidth, mHeight };
@@ -142,11 +261,120 @@ void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* ce
 int LTexture::getWidth(){
 	return mWidth;
 }
-
 int LTexture::getHeight(){
 	return mHeight;
 }
 
+int main( int argc, char* args[] )
+{
+	freopen("output.txt","w",stdout);
+	init();
+	loadMedia();
+	bool quit = false;
+	SDL_Event e;
+	LTexture* currentTexture = NULL;
+    LTimer timer;
+    SDL_Color textColor = { 0, 0, 0, 255 };
+    //Current time start time
+    Uint32 startTime = 0;
+    std::vector<Pipe> pipes;
+    std :: stringstream timeText;
+	while( !quit ){
+		while( SDL_PollEvent( &e ) != 0 ){
+			if( e.type == SDL_QUIT )quit = true;	
+            //Handle key press
+            else if(e.type == SDL_KEYDOWN){
+                switch (e.key.keysym.sym)
+                {
+                case SDLK_w:
+                    Mix_PlayChannel(-1, gHigh,0);
+                    break;
+                case SDLK_UP:
+                    Mix_PlayChannel(-1,gMedium,0);
+                    break;
+                case SDLK_DOWN:
+                    Mix_PlayChannel(-1,gScratch,0);
+                    break;
+                case SDLK_4:
+                    Mix_PlayChannel(-1,gLow,0);
+                case SDLK_9:
+                        if(Mix_PausedMusic() == 0) Mix_PlayMusic(gMusic,-1);
+                        else{
+                            if(Mix_PausedMusic() == 1) Mix_ResumeMusic();
+                            else Mix_PauseMusic();
+                        } 
+                    break;
+                case SDLK_0:
+                    Mix_HaltMusic();
+                    break;
+                default:
+                    break;
+                }
+                if(e.key.keysym.sym == SDLK_RETURN) startTime = SDL_GetTicks();
+
+                if( e.key.keysym.sym == SDLK_s ){
+                        if( timer.isStarted() )  timer.stop();
+                        else    timer.start();
+                    }
+                            //Pause/unpause
+                    else if( e.key.keysym.sym == SDLK_p )
+                            {
+                                if( timer.isPaused() )  timer.unpause();
+                                else timer.pause();
+                                
+                            }
+                }
+		}
+         //Set text to be rendered
+                timeText.str( "" );
+                timeText << "Seconds since start time " << ( timer.getTicks() / 1000.f ) ; 
+
+                //Render text
+                if( !gTimeTextTexture.loadFromRenderedText( timeText.str().c_str(), textColor ) )
+                {
+                    printf( "Unable to render time texture!\n" );
+                } 
+        // gTimeTextTure.loadFromRenderedText(timeText.str().c_str(),textColor);
+        // SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF ); //set alpha white
+		// SDL_RenderClear( gRenderer );
+        // //
+		// const Uint8* currentKeyStates = SDL_GetKeyboardState( NULL );
+		// if( currentKeyStates[ SDL_SCANCODE_UP ])currentTexture = &gUpTexture;		
+		// else if( currentKeyStates[ SDL_SCANCODE_DOWN ] ) currentTexture = &gDownTexture;
+		// else if( currentKeyStates[ SDL_SCANCODE_LEFT ] ) currentTexture = &gLeftTexture;
+		// else if( currentKeyStates[ SDL_SCANCODE_RIGHT ] ) currentTexture = &gRightTexture;
+		// else if(currentKeyStates[SDL_SCANCODE_W] ){
+		// 	currentTexture = &gPiranha1;
+		// 	currentTexture->render(SCREEN_WIDTH/2,SCREEN_HEIGHT/2);
+		// }
+		// else if(currentKeyStates[SDL_SCANCODE_A] ) {
+		// 	currentTexture = &gPiranha2;
+		// 	currentTexture->render(SCREEN_WIDTH/3,SCREEN_HEIGHT/2);
+		// }
+		// else if(currentKeyStates[SDL_SCANCODE_S] ) currentTexture = &gPiranha3;
+		// else currentTexture = &gPressTexture;
+		// gPromptTextTexture.render(0,0);
+        // gTimeTextTure.render(0,(SCREEN_HEIGHT-gPromptTextTexture.getHeight())/2);
+        // gPromptTexture.render(0,0)	;
+		// //clear the previous render.
+		// currentTexture->render( 0, 0 ); // render texture.
+		// SDL_RenderPresent( gRenderer );
+        //Clear screen
+                SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+                SDL_RenderClear( gRenderer );
+
+                //Render textures
+                gStartPromptTexture.render( ( SCREEN_WIDTH - gStartPromptTexture.getWidth() ) / 2, 0 );
+                gPausePromptTexture.render( ( SCREEN_WIDTH - gPausePromptTexture.getWidth() ) / 2, gStartPromptTexture.getHeight() );
+                gTimeTextTexture.render( ( SCREEN_WIDTH - gTimeTextTexture.getWidth() ) / 2, ( SCREEN_HEIGHT - gTimeTextTexture.getHeight() ) / 2 );
+
+                //Update screen
+                SDL_RenderPresent( gRenderer );
+	}
+	close();
+
+	return 0;
+}
 bool init(){
 	bool success = true;
 	if( SDL_Init( SDL_INIT_VIDEO ) < 0 ){
@@ -179,6 +407,18 @@ bool init(){
 					printf( "SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError() );
 					success = false;
 				}
+                //Initialize SDL_mixer
+                if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
+				{
+					printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
+					success = false;
+				}
+                //Initialize SDL_ttf
+                if( TTF_Init() == -1 )
+				{
+					printf( "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError() );
+					success = false;
+				}
 			}
 		}
 	}
@@ -186,8 +426,9 @@ bool init(){
 }
 bool loadMedia(){
 	bool success = true;
+    gFont = TTF_OpenFont( "Sprites/arial.ttf", 28 );
 	gArrowTexture.loadFromFile("Sprites/arrow.png");
-	gPressTexture.loadFromFile( "Sprites/press.png" );
+	// gPressTexture.loadFromFile( "Sprites/press.png" );
 	gUpTexture.loadFromFile( "Sprites/up.png" ) ;
 	gDownTexture.loadFromFile( "Sprites/down.png" );
 	gLeftTexture.loadFromFile( "Sprites/left.png" ) ;
@@ -195,9 +436,37 @@ bool loadMedia(){
 	gPiranha1.loadFromFile( "Sprites/Piranha1.png" );
 	gPiranha2.loadFromFile( "Sprites/Piranha2.png" );
 	gPiranha3.loadFromFile("Sprites/Piranha3.png");
+    // gPromptTexture.loadFromFile( "Sprites/prompt.png");
+    SDL_Color textColor = {0x00,0x00,0x00,0xFF};
+    gPromptTexture.loadFromRenderedText("Press Enter to Reset Start Time",textColor);
+    gMusic = Mix_LoadMUS("Sprites/beat.wav");
+    gScratch = Mix_LoadWAV("Sprites/scracth.wav");
+    gHigh = Mix_LoadWAV("Sprites/high.wav");
+    gMedium = Mix_LoadWAV( "Sprites/medium.wav" );
+    gLow = Mix_LoadWAV( "Sprites/low.wav" );
+
 	return success;
 }
 void close(){
+    //Free loaded images
+	gPromptTexture.free();
+    gTimeTextTure.free();
+    //Free global font
+	TTF_CloseFont( gFont );
+	gFont = NULL;
+	//Free the sound effects
+	Mix_FreeChunk( gScratch );
+	Mix_FreeChunk( gHigh );
+	Mix_FreeChunk( gMedium );
+	Mix_FreeChunk( gLow );
+    gScratch = NULL;
+	gHigh = NULL;
+	gMedium = NULL;
+	gLow = NULL;
+	//Free the music
+	Mix_FreeMusic( gMusic );
+	gMusic = NULL;
+
 	//Free loaded images
 	gArrowTexture.free();
 	gPressTexture.free();
@@ -215,66 +484,8 @@ void close(){
 	gRenderer = NULL;
 	//Quit SDL subsystems
 	IMG_Quit();
-
+    TTF_Quit();
+    Mix_Quit();
 	SDL_Quit();
-}sdad
-
-
-int main( int argc, char* args[] )
-{
-	freopen("output.txt","w",stdout);
-	init();
-	loadMedia();
-	bool quit = false;
-	int xDir = 0;
-	int yDir = 0;
-	SDL_Event e;
-	LTexture* currentTexture = NULL;
-	while( !quit ){
-		while( SDL_PollEvent( &e ) != 0 ){
-			if( e.type == SDL_QUIT )quit = true;	
-			else if(e.type = SDL_JOYAXISMOTION){
-				if(e.jaxis.which == 0){
-					if(e.jaxis.axis == 0){
-						if(e.jaxis.value < - JOYSTICK_DEAD_ZONE) xDir = -1; // left of dead zone
-						else if(e.jaxis.value > JOYSTICK_DEAD_ZONE) xDir = 1; // right of dead zone
-						else xDir = 0;
-					}
-				else if(e.jaxis.which == 1){
-					if(e.jaxis.value < - JOYSTICK_DEAD_ZONE) yDir = -1; // top of dead zone
-					else if(e.jaxis.value > JOYSTICK_DEAD_ZONE) yDir = 1; // bottom of dead zone
-					else yDir = 0;
-				}
-				}
-			}
-		}
-		// SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF ); //set alpha white
-		// SDL_RenderClear( gRenderer );	
-		const Uint8* currentKeyStates = SDL_GetKeyboardState( NULL );
-		if( currentKeyStates[ SDL_SCANCODE_UP ])currentTexture = &gUpTexture;		
-		else if( currentKeyStates[ SDL_SCANCODE_DOWN ] ) currentTexture = &gDownTexture;
-		else if( currentKeyStates[ SDL_SCANCODE_LEFT ] ) currentTexture = &gLeftTexture;
-		else if( currentKeyStates[ SDL_SCANCODE_RIGHT ] ) currentTexture = &gRightTexture;
-		else if(currentKeyStates[SDL_SCANCODE_W] ){
-			currentTexture = &gPiranha1;
-			currentTexture->render(SCREEN_WIDTH/2,SCREEN_HEIGHT/2);
-		}
-		else if(currentKeyStates[SDL_SCANCODE_A] ) {
-			currentTexture = &gPiranha2;
-			currentTexture->render(SCREEN_WIDTH/3,SCREEN_HEIGHT/2);
-		}
-		else if(currentKeyStates[SDL_SCANCODE_S] ) currentTexture = &gPiranha3;
-		else currentTexture = &gPressTexture;
-		SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF ); //set alpha white
-		SDL_RenderClear( gRenderer );	
-		double joystickAngle = atan2( (double)yDir, (double)xDir ) * ( 180.0 / M_PI );
-		if( xDir == 0 && yDir == 0 ) joystickAngle = 0; // check correct angle
-		gArrowTexture.render( ( SCREEN_WIDTH - gArrowTexture.getWidth() ) / 2, ( SCREEN_HEIGHT - gArrowTexture.getHeight() ) / 2, NULL, joystickAngle );				
-		//clear the previous render.
-		currentTexture->render( 0, 0 ); // render texture.
-		SDL_RenderPresent( gRenderer );
-	}
-	close();
-
-	return 0;
 }
+

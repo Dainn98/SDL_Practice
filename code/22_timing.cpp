@@ -1,17 +1,17 @@
 /*This source code copyrighted by Lazy Foo' Productions 2004-2024
 and may not be redistributed without written permission.*/
 
-//Using SDL, SDL_image, SDL_ttf, SDL_mixer, standard IO, math, and strings
+//Using SDL, SDL_image, SDL_ttf, standard IO, strings, and string streams
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-#include <SDL2/SDL_mixer.h>
+#include <SDL_ttf.h>
 #include <stdio.h>
 #include <string>
-#include <bits/stdc++.h>
-#include "file.h/Header.h"
+#include <sstream>
+
 //Screen dimension constants
-// const int SCREEN_WIDTH = 640;
-// const int SCREEN_HEIGHT = 480;
+const int SCREEN_WIDTH = 640;
+const int SCREEN_HEIGHT = 480;
 
 //Texture wrapper class
 class LTexture
@@ -69,23 +69,17 @@ bool loadMedia();
 void close();
 
 //The window we'll be rendering to
-// SDL_Window* gWindow = NULL;
+SDL_Window* gWindow = NULL;
 
-// //The window renderer
-// SDL_Renderer* gRenderer = NULL;4
+//The window renderer
+SDL_Renderer* gRenderer = NULL;
 
-//Scene texture
-LTexture gPromptTexture;
+//Globally used font
+TTF_Font* gFont = NULL;
 
-//The music that will be played
-Mix_Music *gMusic = NULL;
-
-//The sound effects that will be used
-Mix_Chunk *gScratch = NULL;
-Mix_Chunk *gHigh = NULL;
-Mix_Chunk *gMedium = NULL;
-Mix_Chunk *gLow = NULL;
-
+//Scene textures
+LTexture gTimeTextTexTure;
+LTexture gPromptTextTexture;
 
 LTexture::LTexture()
 {
@@ -241,7 +235,7 @@ bool init()
 	bool success = true;
 
 	//Initialize SDL
-	if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
+	if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
 	{
 		printf( "SDL could not initialize! SDL Error: %s\n", SDL_GetError() );
 		success = false;
@@ -283,10 +277,10 @@ bool init()
 					success = false;
 				}
 
-				 //Initialize SDL_mixer
-				if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
+				 //Initialize SDL_ttf
+				if( TTF_Init() == -1 )
 				{
-					printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
+					printf( "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError() );
 					success = false;
 				}
 			}
@@ -301,48 +295,24 @@ bool loadMedia()
 	//Loading success flag
 	bool success = true;
 
-	//Load prompt texture
-	if( !gPromptTexture.loadFromFile( "Sprites/prompt.png" ) )
+	//Open the font
+	gFont = TTF_OpenFont( "22_timing/lazy.ttf", 28 );
+	if( gFont == NULL )
 	{
-		printf( "Failed to load prompt texture!\n" );
+		printf( "Failed to load lazy font! SDL_ttf Error: %s\n", TTF_GetError() );
 		success = false;
 	}
-
-	//Load music
-	gMusic = Mix_LoadMUS( "Sprites/beat.wav" );
-	if( gMusic == NULL )
+	else
 	{
-		printf( "Failed to load beat music! SDL_mixer Error: %s\n", Mix_GetError() );
-		success = false;
-	}
-	
-	//Load sound effects
-	gScratch = Mix_LoadWAV( "Sprites/scratch.wav" );
-	if( gScratch == NULL )
-	{
-		printf( "Failed to load scratch sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
-		success = false;
-	}
-	
-	gHigh = Mix_LoadWAV( "Sprites/high.wav" );
-	if( gHigh == NULL )
-	{
-		printf( "Failed to load high sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
-		success = false;
-	}
-
-	gMedium = Mix_LoadWAV( "Sprites/medium.wav" );
-	if( gMedium == NULL )
-	{
-		printf( "Failed to load medium sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
-		success = false;
-	}
-
-	gLow = Mix_LoadWAV( "Sprites/low.wav" );
-	if( gLow == NULL )
-	{
-		printf( "Failed to load low sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
-		success = false;
+		//Set text color as black
+		SDL_Color textColor = { 0, 0, 0, 255 };
+		
+		//Load prompt texture
+		if( !gPromptTextTexture.loadFromRenderedText( "Press Enter to Reset Start Time.", textColor ) )
+		{
+			printf( "Unable to render prompt texture!\n" );
+			success = false;
+		}
 	}
 
 	return success;
@@ -351,21 +321,12 @@ bool loadMedia()
 void close()
 {
 	//Free loaded images
-	gPromptTexture.free();
+	gTimeTextTexture.free();
+	gPromptTextTexture.free();
 
-	//Free the sound effects
-	Mix_FreeChunk( gScratch );
-	Mix_FreeChunk( gHigh );
-	Mix_FreeChunk( gMedium );
-	Mix_FreeChunk( gLow );
-	gScratch = NULL;
-	gHigh = NULL;
-	gMedium = NULL;
-	gLow = NULL;
-	
-	//Free the music
-	Mix_FreeMusic( gMusic );
-	gMusic = NULL;
+	//Free global font
+	TTF_CloseFont( gFont );
+	gFont = NULL;
 
 	//Destroy window	
 	SDL_DestroyRenderer( gRenderer );
@@ -374,7 +335,7 @@ void close()
 	gRenderer = NULL;
 
 	//Quit SDL subsystems
-	Mix_Quit();
+	TTF_Quit();
 	IMG_Quit();
 	SDL_Quit();
 }
@@ -401,6 +362,15 @@ int main( int argc, char* args[] )
 			//Event handler
 			SDL_Event e;
 
+			//Set text color as black
+			SDL_Color textColor = { 0, 0, 0, 255 };
+
+			//Current time start time
+			Uint32 startTime = 0;
+
+			//In memory text stream
+			std::stringstream timeText;
+
 			//While application is running
 			while( !quit )
 			{
@@ -412,70 +382,30 @@ int main( int argc, char* args[] )
 					{
 						quit = true;
 					}
-					//Handle key press
-					else if( e.type == SDL_KEYDOWN )
+					//Reset start time on return keypress
+					else if( e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN )
 					{
-						switch( e.key.keysym.sym )
-						{
-							//Play high sound effect
-							case SDLK_1:
-							Mix_PlayChannel( -1, gHigh, 0 );
-							break;
-							
-							//Play medium sound effect
-							case SDLK_2:
-							Mix_PlayChannel( -1, gMedium, 0 );
-							break;
-							
-							//Play low sound effect
-							case SDLK_3:
-							Mix_PlayChannel( -1, gLow, 0 );
-							break;
-							
-							//Play scratch sound effect
-							case SDLK_4:
-							Mix_PlayChannel( -1, gScratch, 0 );
-							break;
-							
-							case SDLK_9:
-							//If there is no music playing
-							if( Mix_PlayingMusic() == 0 )
-							{
-								//Play the music
-								Mix_PlayMusic( gMusic, -1 );
-							}
-							//If music is being played
-							else
-							{
-								//If the music is paused
-								if( Mix_PausedMusic() == 1 )
-								{
-									//Resume the music
-									Mix_ResumeMusic();
-								}
-								//If the music is playing
-								else
-								{
-									//Pause the music
-									Mix_PauseMusic();
-								}
-							}
-							break;
-							
-							case SDLK_0:
-							//Stop the music
-							Mix_HaltMusic();
-							break;
-						}
+						startTime = SDL_GetTicks();
 					}
+				}
+
+				//Set text to be rendered
+				timeText.str( "" );
+				timeText << "Milliseconds since start time " << SDL_GetTicks() - startTime; 
+
+				//Render text
+				if( !gTimeTextTexture.loadFromRenderedText( timeText.str().c_str(), textColor ) )
+				{
+					printf( "Unable to render time texture!\n" );
 				}
 
 				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 				SDL_RenderClear( gRenderer );
 
-				//Render prompt
-				gPromptTexture.render( 0, 0 );
+				//Render textures
+				gPromptTextTexture.render( ( SCREEN_WIDTH - gPromptTextTexture.getWidth() ) / 2, 0 );
+				gTimeTextTexture.render( ( SCREEN_WIDTH - gPromptTextTexture.getWidth() ) / 2, ( SCREEN_HEIGHT - gPromptTextTexture.getHeight() ) / 2 );
 
 				//Update screen
 				SDL_RenderPresent( gRenderer );
